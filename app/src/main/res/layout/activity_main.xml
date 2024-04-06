@@ -72,6 +72,13 @@
             android:text="Countdown"
             android:textSize="24sp" />
 
+        <Button
+            android:id="@+id/activity_main_btn_show_answers"
+            android:enabled="false"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Show Answers" />
+
         <TextView
             android:id="@+id/activity_main_tv_answers"
             android:layout_width="wrap_content"
