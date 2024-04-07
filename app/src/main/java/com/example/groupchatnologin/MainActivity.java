@@ -31,11 +31,10 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private FirebaseFirestore mDb;
     private DocumentReference mCountdownRef;
-    private CollectionReference mAnswersRef;
 
     private Button btnLock, btnStartTimer, btnShowAnswers;
     private EditText etAnswer;
-    private TextView tvTimer, tvAnswers;
+    private TextView tvTimer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,20 +47,16 @@ public class MainActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         mDb = FirebaseFirestore.getInstance();
         mCountdownRef = mDb.collection("settings").document("countdown");
-//        mAnswersRef = mDb.collection("answers");
-        // Listen for real-time updates
         mCountdownRef.addSnapshotListener(this::countdownRefUpdated);
-//        mAnswersRef.addSnapshotListener((value, error) -> btnShowAnswers.setEnabled(true));
 
         btnStartTimer.setOnClickListener(v -> startCountdown());
         btnLock.setOnClickListener(v -> enableAnswering(false));
-        btnShowAnswers.setOnClickListener(v -> fetchAnswers());
+        btnShowAnswers.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, AnswersActivity.class)));
     }
 
     private void findViews() {
         etAnswer = findViewById(R.id.activity_main_et_answer);
         tvTimer = findViewById(R.id.activity_main_tv_timer);
-        tvAnswers = findViewById(R.id.activity_main_tv_answers);
         btnLock = findViewById(R.id.activity_main_btn_lock_answer);
         btnStartTimer = findViewById(R.id.activity_main_btn_start_timer);
         btnShowAnswers = findViewById(R.id.activity_main_btn_show_answers);
@@ -87,8 +82,17 @@ public class MainActivity extends AppCompatActivity {
         FirebaseUser currentUser = mAuth.getCurrentUser();
         //TODO: Sign out button
         if(currentUser != null){
-            String message = String.format("Welcome %s", currentUser.getDisplayName());
-            ((TextView)findViewById(R.id.activity_main_tv_welcome)).setText(message);
+            Bundle extras = getIntent().getExtras();
+            String groupId;
+            if(extras == null) {
+                startActivity(new Intent(MainActivity.this, GroupsActivity.class));
+                finish();
+            } else {
+                groupId = extras.getString("groupId");
+                String message = String.format("Welcome %s", currentUser.getDisplayName());
+                ((TextView)findViewById(R.id.activity_main_tv_welcome)).setText(message);
+                Toast.makeText(this, "group id = " + groupId, Toast.LENGTH_SHORT).show();
+            }
         } else {
             startActivity(new Intent(MainActivity.this, LogInActivity.class));
             finish();
@@ -149,22 +153,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void fetchAnswers() {
-        mDb.collection("answers").get().addOnCompleteListener(task -> {
-            if(task.isSuccessful()) {
-                StringBuilder answers = new StringBuilder();
-                for (QueryDocumentSnapshot document : task.getResult()) {
-                    answers.append(document.getData().get("name")).append(" => ").append(document.getData().get("answer")).append(System.getProperty("line.separator"));
-                    Log.d("TAG", document.getData().get("name") + " => " + document.getData().get("answer"));
-                }
-                tvAnswers.setText(answers);
-            }
-        });
-    }
-
     private void enableAnswering(Boolean enable) {
         btnLock.setEnabled(enable);
         etAnswer.setEnabled(enable);
-        btnShowAnswers.setEnabled(!enable);
     }
 }

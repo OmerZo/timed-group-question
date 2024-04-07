@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".GroupsActivity">
 
     <LinearLayout
         android:orientation="vertical"
@@ -18,7 +18,7 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <TextView
-            android:id="@+id/activity_main_tv_welcome"
+            android:id="@+id/activity_group_tv_welcome"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Welcome"
@@ -27,23 +27,6 @@
             android:padding="16dp"
             android:gravity="center" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Please start the timer to enter your answer"
-            android:textSize="16sp"
-            android:gravity="center" />
-
-        <EditText
-            android:autofillHints="null"
-            android:enabled="false"
-            android:hint="Your Answer"
-            android:inputType="text"
-            android:id="@+id/activity_main_et_answer"
-            android:layout_width="match_parent"
-            android:layout_margin="10dp"
-            android:layout_height="48dp" />
-
         <LinearLayout
             android:gravity="center"
             android:orientation="horizontal"
@@ -51,33 +34,21 @@
             android:layout_height="match_parent" >
 
             <Button
-                android:id="@+id/activity_main_btn_start_timer"
+                android:id="@+id/activity_group_btn_join"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Start Timer" />
+                android:text="Join Group" />
 
             <Button
-                android:id="@+id/activity_main_btn_lock_answer"
-                android:enabled="false"
+                android:id="@+id/activity_group_btn_create"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Lock Answer" />
-
-            <Button
-                android:id="@+id/activity_main_btn_show_answers"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Show Answers" />
+                android:text="Create Group" />
 
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/activity_main_tv_timer"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Countdown"
-            android:textSize="24sp" />
-
     </LinearLayout>
+
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
