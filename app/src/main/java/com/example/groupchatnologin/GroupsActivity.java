@@ -4,6 +4,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -13,7 +14,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.HashMap;
@@ -22,7 +23,7 @@ import java.util.Map;
 public class GroupsActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
-    private CollectionReference mGroupsRef;
+    private CollectionReference mGroupsRef, mCountsRef;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,27 +32,37 @@ public class GroupsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_groups);
 
         mAuth = FirebaseAuth.getInstance();
-        mGroupsRef = FirebaseFirestore.getInstance().collection("groups");
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        mGroupsRef = db.collection("groups");
+        mCountsRef = db.collection("countdowns");
 
         findViewById(R.id.activity_group_btn_join).setOnClickListener(v -> joinGroup());
-        findViewById(R.id.activity_group_btn_create).setOnClickListener(v -> createGroup());
-
-
+        findViewById(R.id.activity_group_btn_create).setOnClickListener(v -> createCountdown());
     }
 
-    private void createGroup() {
-        Map<String, Object> user = new HashMap<>();
-        user.put(mAuth.getCurrentUser().getUid(), true);
-        mGroupsRef.add(user).addOnSuccessListener(docRef -> {
-            String groupId = docRef.getId();
+    private void createCountdown() {
+        Map<String, Object> countdown = new HashMap<>();
+        countdown.put("startTime", 0);
+        countdown.put("duration", 0);
+        mCountsRef.add(countdown).addOnSuccessListener(countRef -> createGroup(countRef.getId()));
+    }
+
+    private void createGroup(String countId) {
+        Map<String, Object> group = new HashMap<>();
+        group.put(mAuth.getCurrentUser().getUid(), true);
+        group.put("countId", countId);
+
+        mGroupsRef.add(group).addOnSuccessListener(groupRef -> {
+            String groupId = groupRef.getId();
             copyToClipboard(groupId);
-            StartGame(groupId);
+            StartGame(groupId, countId);
         }).addOnFailureListener(e -> Toast.makeText(this, "Failed Creating A Group", Toast.LENGTH_SHORT).show());
     }
 
-    private void StartGame(String groupId) {
+    private void StartGame(String groupId, String countId) {
         Intent intent = new Intent(GroupsActivity.this, MainActivity.class);
         intent.putExtra("groupId", groupId);
+        intent.putExtra("countId", countId);
         startActivity(intent);
     }
 
@@ -71,7 +82,23 @@ public class GroupsActivity extends AppCompatActivity {
     }
 
     private void joinGroup() {
-        //Get Group ID
+        //TODO: handle empty et
+        String groupId = ((EditText)findViewById(R.id.activity_group_et_groupId)).getText().toString().trim();
+        mGroupsRef.document(groupId).get().addOnCompleteListener(task -> {
+           if(task.isSuccessful()) {
+               DocumentSnapshot groupDoc = task.getResult();
+               if (groupDoc.exists()) {
+                   Toast.makeText(this, "Found Group", Toast.LENGTH_SHORT).show();
+                   if(groupDoc.contains("countId")) {
+                       StartGame(groupId, groupDoc.get("countId").toString());
+                   }
+               } else {
+                   Toast.makeText(this, "Group Not Found", Toast.LENGTH_SHORT).show();
+               }
+           } else {
+               Toast.makeText(this, "Failed To Fetch Data", Toast.LENGTH_SHORT).show();
+           }
+        });
         //Search DB and update
         //Intent with Data
     }

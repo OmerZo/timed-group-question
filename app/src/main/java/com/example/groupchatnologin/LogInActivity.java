@@ -59,7 +59,7 @@ public class LogInActivity extends AppCompatActivity {
                                 .addOnCompleteListener(updateTask -> {
                                     if(updateTask.isSuccessful()) {
                                         updateDb(user, userName);
-                                        startActivity(new Intent(LogInActivity.this, MainActivity.class));
+                                        startActivity(new Intent(LogInActivity.this, GroupsActivity.class));
                                         finish();
                                     } else {
                                         Toast.makeText(LogInActivity.this, "Update Name Failed", Toast.LENGTH_SHORT).show();

@@ -4,7 +4,6 @@ package com.example.groupchatnologin;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -15,13 +14,10 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.Transaction;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,11 +26,14 @@ public class MainActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
     private FirebaseFirestore mDb;
-    private DocumentReference mCountdownRef;
+    private DocumentReference mCountdownRef, mGroupRef;
 
     private Button btnLock, btnStartTimer, btnShowAnswers;
     private EditText etAnswer;
     private TextView tvTimer;
+
+    //TODO: Sign out button
+    //TODO: Create atomic transactions
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,12 +45,25 @@ public class MainActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
         mDb = FirebaseFirestore.getInstance();
-        mCountdownRef = mDb.collection("settings").document("countdown");
-        mCountdownRef.addSnapshotListener(this::countdownRefUpdated);
 
         btnStartTimer.setOnClickListener(v -> startCountdown());
         btnLock.setOnClickListener(v -> enableAnswering(false));
         btnShowAnswers.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, AnswersActivity.class)));
+
+        getDocRefs();
+    }
+
+    private void getDocRefs() {
+        Bundle extras = getIntent().getExtras();
+        if(extras != null) {
+            String groupId = extras.getString("groupId");
+            String countId = extras.getString("countId");
+            Toast.makeText(this, "group id = " + groupId, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "count id = " + countId, Toast.LENGTH_SHORT).show();
+            mGroupRef = mDb.collection("groups").document(groupId);
+            mCountdownRef = mDb.collection("countdowns").document(countId);
+            mCountdownRef.addSnapshotListener(this::countdownRefUpdated);
+        }
     }
 
     private void findViews() {
@@ -80,19 +92,14 @@ public class MainActivity extends AppCompatActivity {
     public void onStart() {
         super.onStart();
         FirebaseUser currentUser = mAuth.getCurrentUser();
-        //TODO: Sign out button
         if(currentUser != null){
             Bundle extras = getIntent().getExtras();
-            String groupId;
             if(extras == null) {
                 startActivity(new Intent(MainActivity.this, GroupsActivity.class));
                 finish();
-            } else {
-                groupId = extras.getString("groupId");
-                String message = String.format("Welcome %s", currentUser.getDisplayName());
-                ((TextView)findViewById(R.id.activity_main_tv_welcome)).setText(message);
-                Toast.makeText(this, "group id = " + groupId, Toast.LENGTH_SHORT).show();
             }
+            String message = String.format("Welcome %s", currentUser.getDisplayName());
+            ((TextView)findViewById(R.id.activity_main_tv_welcome)).setText(message);
         } else {
             startActivity(new Intent(MainActivity.this, LogInActivity.class));
             finish();
@@ -100,18 +107,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startCountdown() {
-
         long duration = 30000;
         long startTime = System.currentTimeMillis();
 
-        // Run a transaction to ensure atomic update
-        mDb.runTransaction((Transaction.Function<Void>) transaction -> {
-            transaction.update(mCountdownRef, "startTime", startTime, "duration", duration);
-            return null; // Success
-        }).addOnFailureListener(e -> {
-            // Handle failure
-            Toast.makeText(this, "Can't start countdown", Toast.LENGTH_LONG).show();
-        });
+        Map<String, Object> countdown = new HashMap<>();
+        countdown.put("startTime", startTime);
+        countdown.put("duration", duration);
+        mCountdownRef.set(countdown).addOnFailureListener(command ->
+                Toast.makeText(this, "Can't start countdown", Toast.LENGTH_LONG).show());
     }
 
     private void updateCountdownUI(long startTime, long duration) {
