@@ -105,10 +105,7 @@ public class GroupsActivity extends AppCompatActivity {
         super.onStart();
         FirebaseUser currentUser = mAuth.getCurrentUser();
         //TODO: Sign out button
-        if(currentUser != null){
-            String message = String.format("Welcome %s", currentUser.getDisplayName());
-            ((TextView)findViewById(R.id.activity_group_tv_welcome)).setText(message);
-        } else {
+        if(currentUser == null) {
             startActivity(new Intent(GroupsActivity.this, LogInActivity.class));
             finish();
         }
