@@ -16,6 +16,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 
@@ -34,6 +35,8 @@ public class MainActivity extends AppCompatActivity {
 
     //TODO: Sign out button
     //TODO: Create atomic transactions
+    //TODO: Progress bar
+    //TODO: Message to copy groupID
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,18 +51,23 @@ public class MainActivity extends AppCompatActivity {
 
         btnStartTimer.setOnClickListener(v -> startCountdown());
         btnLock.setOnClickListener(v -> enableAnswering(false));
-        btnShowAnswers.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, AnswersActivity.class)));
+        btnShowAnswers.setOnClickListener(v -> showAnswers());
 
         getDocRefs();
     }
 
+    private void showAnswers() {
+        Intent intent = new Intent(MainActivity.this, AnswersActivity.class);
+        intent.putExtra("groupId", mGroupRef.getId());
+        startActivity(intent);
+    }
+
     private void getDocRefs() {
+        //TODO: Use const
         Bundle extras = getIntent().getExtras();
         if(extras != null) {
             String groupId = extras.getString("groupId");
             String countId = extras.getString("countId");
-            Toast.makeText(this, "group id = " + groupId, Toast.LENGTH_SHORT).show();
-            Toast.makeText(this, "count id = " + countId, Toast.LENGTH_SHORT).show();
             mGroupRef = mDb.collection("groups").document(groupId);
             mCountdownRef = mDb.collection("countdowns").document(countId);
             mCountdownRef.addSnapshotListener(this::countdownRefUpdated);
@@ -152,7 +160,12 @@ public class MainActivity extends AppCompatActivity {
             answerData.put("name", user.getDisplayName());
             answerData.put("userId", user.getUid());
             answerData.put("answer", answer);
-            mDb.collection("answers").add(answerData);
+
+            String answerId = mDb.collection("answers").document().getId();
+            mDb.collection("answers").document(answerId).set(answerData)
+                    .addOnSuccessListener(unused ->
+                        mGroupRef.update("answersIds", FieldValue.arrayUnion(answerId))
+                    );
         }
     }
 

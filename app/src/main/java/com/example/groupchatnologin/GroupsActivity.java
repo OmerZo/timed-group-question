@@ -15,6 +15,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.HashMap;
@@ -49,11 +50,13 @@ public class GroupsActivity extends AppCompatActivity {
 
     private void createGroup(String countId) {
         Map<String, Object> group = new HashMap<>();
-        group.put(mAuth.getCurrentUser().getUid(), true);
+//        group.put(mAuth.getCurrentUser().getUid(), true);
         group.put("countId", countId);
+
 
         mGroupsRef.add(group).addOnSuccessListener(groupRef -> {
             String groupId = groupRef.getId();
+            mGroupsRef.document(groupId).update("usersIds", FieldValue.arrayUnion(mAuth.getCurrentUser().getUid()));
             copyToClipboard(groupId);
             StartGame(groupId, countId);
         }).addOnFailureListener(e -> Toast.makeText(this, "Failed Creating A Group", Toast.LENGTH_SHORT).show());
@@ -75,32 +78,26 @@ public class GroupsActivity extends AppCompatActivity {
 
         // Set the clipboard data
         clipboard.setPrimaryClip(clip);
-
-        // Notify user
-        Toast.makeText(getApplicationContext(), "Group ID Copied to Clipboard", Toast.LENGTH_SHORT).show();
-
     }
 
     private void joinGroup() {
-        //TODO: handle empty et
         String groupId = ((EditText)findViewById(R.id.activity_group_et_groupId)).getText().toString().trim();
-        mGroupsRef.document(groupId).get().addOnCompleteListener(task -> {
-           if(task.isSuccessful()) {
-               DocumentSnapshot groupDoc = task.getResult();
-               if (groupDoc.exists()) {
-                   Toast.makeText(this, "Found Group", Toast.LENGTH_SHORT).show();
-                   if(groupDoc.contains("countId")) {
-                       StartGame(groupId, groupDoc.get("countId").toString());
-                   }
-               } else {
-                   Toast.makeText(this, "Group Not Found", Toast.LENGTH_SHORT).show();
-               }
-           } else {
-               Toast.makeText(this, "Failed To Fetch Data", Toast.LENGTH_SHORT).show();
-           }
-        });
-        //Search DB and update
-        //Intent with Data
+        if(!groupId.isEmpty()) {
+            mGroupsRef.document(groupId).get().addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    DocumentSnapshot groupDoc = task.getResult();
+                    if (groupDoc.exists()) {
+                        if (groupDoc.contains("countId")) {
+                            StartGame(groupId, groupDoc.get("countId").toString());
+                        }
+                    } else {
+                        Toast.makeText(this, "Group Not Found", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(this, "Failed To Fetch Data", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
 
     @Override
